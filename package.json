@@ -1,0 +1,35 @@
+{
+  "name": "graph-atlas-mcp",
+  "version": "0.1.0",
+  "description": "MCP server tracking undocumented and documented Microsoft Graph API schema changes across Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "graph-atlas-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "seed": "node --experimental-sqlite scripts/seed-from-entra-ms.js",
+    "backfill": "node --experimental-sqlite scripts/backfill-from-changelog.js",
+    "collect": "node --experimental-sqlite scripts/collect-and-diff.js",
+    "collect-permissions": "node --experimental-sqlite scripts/collect-permissions.js",
+    "collect-roles": "node --experimental-sqlite scripts/collect-roles.js",
+    "build-role-map": "node --experimental-sqlite scripts/build-role-permission-map.js",
+    "embed": "node --experimental-sqlite --env-file-if-exists=.env scripts/generate-embeddings.js",
+    "build": "tsc",
+    "start": "node --experimental-sqlite --env-file-if-exists=.env dist/index.js"
+  },
+  "license": "MIT",
+  "author": "Darren Robinson",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "fast-xml-parser": "^5.10.1",
+    "sqlite-vec": "^0.1.9",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2"
+  }
+}

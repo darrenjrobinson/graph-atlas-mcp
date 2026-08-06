@@ -1,1 +1,14 @@
 graph-atlas-mcp-prd.md
+
+# one-off local seed utility — see PRD §8.3a, not part of the committed repo
+scripts/seed-from-entra-ms.js
+
+node_modules/
+dist/
+graph-atlas.db
+*.db
+*.db-shm
+*.db-wal
+.last-collect-change-count
+.env
+.claude/
