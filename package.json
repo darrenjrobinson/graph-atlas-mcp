@@ -1,14 +1,37 @@
 {
   "name": "graph-atlas-mcp",
   "version": "0.1.0",
-  "description": "MCP server tracking undocumented and documented Microsoft Graph API schema changes across Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection.",
+  "mcpName": "io.github.darrenjrobinson/graph-atlas-mcp",
+  "description": "MCP server tracking undocumented and documented Microsoft Graph API schema changes across Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection — with an interactive MCP Apps schema visualiser.",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "graph-atlas-mcp": "./dist/index.js"
+    "graph-atlas-mcp": "./bin/graph-atlas-mcp.js"
   },
+  "files": [
+    "bin",
+    "dist",
+    "snapshots"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/darrenjrobinson/graph-atlas-mcp.git"
+  },
+  "homepage": "https://github.com/darrenjrobinson/graph-atlas-mcp#readme",
+  "bugs": "https://github.com/darrenjrobinson/graph-atlas-mcp/issues",
+  "keywords": [
+    "mcp",
+    "mcp-app",
+    "microsoft",
+    "graph",
+    "entra",
+    "identity",
+    "schema",
+    "changelog",
+    "visualization"
+  ],
   "scripts": {
     "seed": "node --experimental-sqlite scripts/seed-from-entra-ms.js",
     "backfill": "node --experimental-sqlite scripts/backfill-from-changelog.js",
@@ -19,14 +42,14 @@
     "embed": "node --experimental-sqlite --env-file-if-exists=.env scripts/generate-embeddings.js",
     "build:app-ui": "node scripts/build-app-ui.js",
     "build": "tsc && tsc -p app-ui --noEmit && npm run build:app-ui",
+    "prepublishOnly": "npm run build",
     "start": "node --experimental-sqlite --env-file-if-exists=.env dist/index.js"
   },
   "license": "MIT",
-  "author": "Darren Robinson",
+  "author": "Darren J Robinson",
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "fast-xml-parser": "^5.10.1",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.4.3"
   },
@@ -35,6 +58,7 @@
     "@types/node": "^26.1.2",
     "d3": "^7.9.0",
     "esbuild": "^0.28.1",
+    "fast-xml-parser": "^5.10.1",
     "typescript": "^7.0.2"
   }
 }

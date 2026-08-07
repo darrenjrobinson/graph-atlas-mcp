@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.darrenjrobinson/graph-atlas-mcp",
+  "description": "Microsoft Graph API schema-change tracker (documented and undocumented) with an interactive MCP Apps schema/permission/role visualiser",
+  "repository": {
+    "url": "https://github.com/darrenjrobinson/graph-atlas-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "graph-atlas-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

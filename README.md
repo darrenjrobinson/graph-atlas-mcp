@@ -16,11 +16,31 @@ Microsoft Graph evolves continuously across `v1.0` and `beta`. The official chan
 
 Two further tables enrich every change with real-world permission/role context: `permissions` (1,036 scopes scraped from [Merill's Graph Permissions Explorer](https://graphpermissions.merill.net/permission/)) and `roles` (135 Entra built-in roles and their `microsoft.directory/*` actions, from the [Microsoft Learn permissions reference](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference)), cross-referenced into `role_permission_map`.
 
-## Setup
+## Quick start (npx)
 
-Requires **Node.js 22+** (uses the built-in, experimental `node:sqlite`).
+Requires **Node.js 22+** (uses the built-in `node:sqlite`). Add to your MCP client — e.g.
+Claude Desktop's `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "graph-atlas": {
+      "command": "npx",
+      "args": ["-y", "graph-atlas-mcp"]
+    }
+  }
+}
+```
+
+That's the whole setup: on first launch the server auto-downloads the latest published
+database (change history, permissions, roles, embeddings) from this repo's GitHub Releases
+into `~/.graph-atlas-mcp/`, and keeps it current against the daily release cadence.
+
+## Developing from source
 
 ```bash
+git clone https://github.com/darrenjrobinson/graph-atlas-mcp.git
+cd graph-atlas-mcp
 npm install
 npm run build
 ```
@@ -54,9 +74,9 @@ npm run embed      # generates embeddings for any change records that don't have
 
 Re-running `npm run embed` after a `collect` only embeds new records — it's incremental, not a full re-embed.
 
-## Connect it to an MCP client
+### Connect a source checkout to an MCP client
 
-Example for Claude Desktop's `claude_desktop_config.json`:
+When developing, point the client at your build and local DB instead of the npm package:
 
 ```json
 {
@@ -73,8 +93,8 @@ Example for Claude Desktop's `claude_desktop_config.json`:
 ```
 
 `GRAPH_ATLAS_DB` points the server at an explicit DB file. Without it, the server looks for
-`~/.graph-atlas-mcp/graph-atlas.db` (auto-downloaded from the latest GitHub Release once one
-exists), then falls back to `./graph-atlas.db` in the current working directory.
+`~/.graph-atlas-mcp/graph-atlas.db` (auto-downloaded from the latest GitHub Release), then
+falls back to `./graph-atlas.db` in the current working directory.
 
 ## Tools
 
@@ -152,11 +172,16 @@ your MCP client (or the server connection) after rebuilding.
 ### Testing with MCP Jam
 
 ```bash
+# published package
+npx @mcpjam/inspector@latest npx -y graph-atlas-mcp
+
+# or a source checkout
 GRAPH_ATLAS_DB=/absolute/path/to/graph-atlas.db \
   npx @mcpjam/inspector@latest node --experimental-sqlite /absolute/path/to/dist/index.js
 ```
 
-All paths must be absolute — MCP Jam spawns the server from its own working directory. Two
+For source checkouts all paths must be absolute — MCP Jam spawns the server from its own
+working directory. Two
 MCP Jam (v2.34) quirks to know about: widgets only render under the **MCP Jam host profile**
 (the "Claude" host-emulation profile leaves the widget iframe stuck at "loading"), and the
 widget's Sandbox tab / `debug/widget-visibility` trace events are the fastest way to diagnose a
