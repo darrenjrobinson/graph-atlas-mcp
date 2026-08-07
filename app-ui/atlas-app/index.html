@@ -1,0 +1,57 @@
+<div id="app">
+  <header id="toolbar">
+    <div class="brand">
+      <span class="brand-mark">⬡</span>
+      <span class="brand-name">Graph Atlas</span>
+    </div>
+    <nav id="view-tabs" aria-label="Views">
+      <button class="tab active" data-view="entity">Entity</button>
+      <button class="tab" data-view="permission">Permission</button>
+      <button class="tab" data-view="role">Role</button>
+    </nav>
+    <div id="context-picker">
+      <select id="endpoint-select" title="Graph endpoint (entity view)">
+        <option value="v1.0" selected>v1.0</option>
+        <option value="beta">beta</option>
+      </select>
+      <select id="since-select" title="Change-activity window — applies to new fetches">
+        <option value="7">7 days</option>
+        <option value="30" selected>30 days</option>
+        <option value="90">90 days</option>
+        <option value="all">All time</option>
+      </select>
+    </div>
+    <div class="toolbar-right">
+      <button id="reset-btn" class="ghost" title="Clear the canvas — cached schema data is kept">Reset</button>
+      <div id="search-box">
+        <input id="search-input" type="search" placeholder="Search entities, permissions, roles…" autocomplete="off" spellcheck="false" />
+        <ul id="search-results" hidden></ul>
+      </div>
+    </div>
+  </header>
+
+  <main id="stage">
+    <div id="canvas"></div>
+
+    <aside id="panel" hidden>
+      <button id="panel-close" title="Close" aria-label="Close panel">×</button>
+      <div id="panel-content"></div>
+    </aside>
+
+    <div id="legend"></div>
+
+    <div id="welcome">
+      <div class="welcome-card">
+        <h1>⬡ Microsoft Graph Atlas</h1>
+        <p id="welcome-msg">Ask the assistant to visualize the Graph schema (e.g. “show the schema graph around group”), or search above for an entity type, permission, or role.</p>
+      </div>
+    </div>
+  </main>
+
+  <footer id="statusbar">
+    <span id="stat-nodes">0 nodes</span>
+    <span id="stat-edges">0 edges</span>
+    <span id="stat-api">0 tool calls</span>
+    <span id="stat-msg" class="stat-msg"></span>
+  </footer>
+</div>

@@ -17,19 +17,24 @@
     "collect-roles": "node --experimental-sqlite scripts/collect-roles.js",
     "build-role-map": "node --experimental-sqlite scripts/build-role-permission-map.js",
     "embed": "node --experimental-sqlite --env-file-if-exists=.env scripts/generate-embeddings.js",
-    "build": "tsc",
+    "build:app-ui": "node scripts/build-app-ui.js",
+    "build": "tsc && tsc -p app-ui --noEmit && npm run build:app-ui",
     "start": "node --experimental-sqlite --env-file-if-exists=.env dist/index.js"
   },
   "license": "MIT",
   "author": "Darren Robinson",
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.5",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "fast-xml-parser": "^5.10.1",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "@types/node": "^26.1.2",
+    "d3": "^7.9.0",
+    "esbuild": "^0.28.1",
     "typescript": "^7.0.2"
   }
 }
