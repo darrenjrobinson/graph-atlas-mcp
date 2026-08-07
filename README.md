@@ -2,6 +2,8 @@
 
 An MCP server that tracks schema changes across the Microsoft Graph API — both the changes Microsoft documents and the ones it doesn't. Covers the full Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection surface, seeded with a year of history at launch. Ships with an interactive [schema visualiser](#schema-visualiser) rendered inside the MCP client via MCP Apps.
 
+![](./img/Microsoft%20Graph%20Atlas%20MCP.png)
+
 ## Why
 
 Microsoft Graph evolves continuously across `v1.0` and `beta`. The official changelog is curated and incomplete — undocumented schema changes (new properties, removed relationships, new enum values) land in production before they're announced. This MCP closes that gap by diffing the actual `$metadata` CSDL daily, and backfills a year of history from both a public community tracker and the official changelog.
