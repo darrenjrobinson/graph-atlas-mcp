@@ -21,6 +21,11 @@ import * as getNodeTimeline from './tools/get-node-timeline.js';
 const APP_UI_DIR = fileURLToPath(new URL('../dist/app-ui', import.meta.url));
 const RESOURCE_URI = 'ui://graph-atlas/atlas-app.html';
 
+// package.json is the single source of truth for the version (synced into
+// server.json by scripts/sync-server-json.js and injected into the app UI
+// at bundle time by scripts/build-app-ui.js).
+const VERSION = (JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8')) as { version: string }).version;
+
 /** _meta helpers — ship both the spec key and the deprecated flat key for host compat. */
 function uiMeta(visibility: string[], withResource: boolean) {
   return {
@@ -35,7 +40,7 @@ const uiResourceMeta = { ui: { csp: { connectDomains: [], resourceDomains: [] },
 async function main() {
   const db = await openDatabase();
 
-  const server = new McpServer({ name: 'graph-atlas', version: '0.1.0' });
+  const server = new McpServer({ name: 'graph-atlas', version: VERSION });
 
   // The UI is optional — every tool still works without it (e.g. before the first build).
   let appHtml: string | null = null;

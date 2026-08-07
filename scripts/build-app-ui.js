@@ -8,6 +8,7 @@ import { join } from 'node:path';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUT_DIR = join(ROOT, 'dist', 'app-ui');
+const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
 
 async function buildApp(appName) {
   const appDir = join(ROOT, 'app-ui', appName);
@@ -20,6 +21,7 @@ async function buildApp(appName) {
     minify: true,
     write: false,
     logLevel: 'warning',
+    define: { __ATLAS_VERSION__: JSON.stringify(version) },
   });
   const js = result.outputFiles[0].text;
   const css = readFileSync(join(appDir, 'styles.css'), 'utf8');

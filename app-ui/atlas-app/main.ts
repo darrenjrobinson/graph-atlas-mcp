@@ -291,9 +291,12 @@ function applyHostTheme(ctx: { theme?: string } | undefined) {
 
 // ---------- MCP App bootstrap ----------
 
+// Injected at bundle time from package.json by scripts/build-app-ui.js.
+declare const __ATLAS_VERSION__: string;
+
 // autoResize (default on) measures the document's natural height — useless for a
 // full-height flex app; claimSpace() owns sizing instead.
-const app = new App({ name: 'graph-atlas-app', version: '0.2.0' }, undefined, { autoResize: false });
+const app = new App({ name: 'graph-atlas-app', version: __ATLAS_VERSION__ }, undefined, { autoResize: false });
 bridge.setApp(app);
 
 app.ontoolresult = (params) => {
