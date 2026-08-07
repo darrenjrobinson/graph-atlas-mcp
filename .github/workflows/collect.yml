@@ -10,6 +10,9 @@ permissions:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    env:
+      # Optional — enables the embeddings step below when the secret is configured.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +34,15 @@ jobs:
 
       - name: Collect and diff
         run: node --experimental-sqlite scripts/collect-and-diff.js
+
+      # Incremental — only embeds change records that don't have an embedding yet, so the
+      # released DB keeps semantic search current. Skipped when the OPENAI_API_KEY secret
+      # isn't configured; continue-on-error so a transient OpenAI outage never blocks the
+      # daily release (un-embedded records are picked up on the next run).
+      - name: Generate embeddings for new changes
+        if: env.OPENAI_API_KEY != ''
+        continue-on-error: true
+        run: node --experimental-sqlite scripts/generate-embeddings.js
 
       - name: Commit snapshot history
         run: |
