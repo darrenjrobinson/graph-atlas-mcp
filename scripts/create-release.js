@@ -12,7 +12,7 @@ const DB_PATH = join(ROOT, 'graph-atlas.db');
 const GZ_PATH = `${DB_PATH}.gz`;
 const CHANGE_COUNT_PATH = join(ROOT, '.last-collect-change-count');
 
-const REPO = process.env.GITHUB_REPOSITORY ?? 'darrenjrobinson/graph-atlas';
+const REPO = process.env.GITHUB_REPOSITORY ?? 'darrenjrobinson/graph-atlas-mcp';
 const TOKEN = process.env.GITHUB_TOKEN;
 
 async function githubApi(path, options = {}) {

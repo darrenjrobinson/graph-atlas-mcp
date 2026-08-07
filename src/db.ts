@@ -4,7 +4,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import * as sqliteVec from 'sqlite-vec';
 
-const GITHUB_REPO = 'darrenjrobinson/graph-atlas';
+const GITHUB_REPO = 'darrenjrobinson/graph-atlas-mcp';
 const CACHE_DIR = join(homedir(), '.graph-atlas-mcp');
 const CACHE_DB_PATH = join(CACHE_DIR, 'graph-atlas.db');
 const LOCAL_DEV_DB_PATH = join(process.cwd(), 'graph-atlas.db');
