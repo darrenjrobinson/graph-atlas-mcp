@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 import * as sqliteVec from 'sqlite-vec';
 
 const GITHUB_REPO = 'darrenjrobinson/graph-atlas-mcp';
@@ -52,7 +53,9 @@ async function tryAutoDownload(dbPath: string): Promise<void> {
         localDate = null;
       }
     }
-    const remoteDate = release.tag_name?.replace(/^v/, '') ?? null;
+    // Release tags are calendar-versioned with dots (v2026.08.07); snapshot dates use
+    // dashes (2026-08-07) — normalize before comparing or the check never matches.
+    const remoteDate = release.tag_name?.replace(/^v/, '').replaceAll('.', '-') ?? null;
     if (localDate && remoteDate && localDate >= remoteDate) {
       log(`local cache (${localDate}) is up to date with release ${remoteDate}, skipping download`);
       return;
@@ -66,8 +69,9 @@ async function tryAutoDownload(dbPath: string): Promise<void> {
     }
     mkdirSync(dirname(dbPath), { recursive: true });
     const buf = Buffer.from(await assetRes.arrayBuffer());
+    const raw = asset.name.endsWith('.gz') ? gunzipSync(buf) : buf;
     const tmpPath = `${dbPath}.download`;
-    writeFileSync(tmpPath, buf);
+    writeFileSync(tmpPath, raw);
     renameSync(tmpPath, dbPath);
     log('auto-download complete');
   } catch (err) {
