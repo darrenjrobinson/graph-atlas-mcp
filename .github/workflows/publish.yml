@@ -1,0 +1,33 @@
+name: Publish to npm
+# Manually triggered — the daily collect workflow creates calendar-tagged DB
+# releases (v2026.08.05), so tag/release triggers would misfire on those.
+# Flow: bump locally with `npm version patch|minor|major` (syncs server.json),
+# push with tags, then run this workflow.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # npm trusted publishing (OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      # Trusted publishing needs npm 11.5.1+
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      # prepublishOnly syncs server.json and runs the full build
+      - name: Publish
+        run: npm publish
