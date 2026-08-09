@@ -13,3 +13,7 @@ graph-atlas.db
 .last-collect-change-count
 .env
 .claude/
+
+# mcp-publisher login tokens (written to cwd by the registry CLI)
+.mcpregistry_github_token
+.mcpregistry_registry_token
