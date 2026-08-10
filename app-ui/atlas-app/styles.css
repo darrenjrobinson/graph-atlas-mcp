@@ -54,7 +54,10 @@ body {
 /* ---------- Toolbar ---------- */
 
 #toolbar {
+  position: relative; /* z-index is inert on static elements — the stage overlays would paint over us */
   display: flex;
+  flex: none; /* never squash vertically when the host hands us a short frame */
+  flex-wrap: wrap;
   align-items: center;
   gap: 20px;
   padding: 10px 16px;
@@ -197,7 +200,10 @@ button.ghost:hover { background: #4f8ef71a; }
 
 /* ---------- Stage / canvas ---------- */
 
-#stage { position: relative; flex: 1; min-height: 0; }
+/* min-height floors the drawing surface: in a pathologically short iframe the app
+   clips at body's overflow:hidden instead of stacking its absolutely-positioned
+   chrome (legend/panel/welcome) on top of the toolbar. */
+#stage { position: relative; flex: 1; min-height: 160px; }
 
 #canvas { position: absolute; inset: 0; }
 
@@ -369,6 +375,8 @@ button.ghost:hover { background: #4f8ef71a; }
   position: absolute;
   left: 14px;
   bottom: 14px;
+  max-height: calc(100% - 28px); /* like #panel: never grow past the stage top */
+  overflow-y: auto;
   background: var(--bg-overlay);
   backdrop-filter: blur(10px);
   border: 1px solid var(--border);
@@ -422,7 +430,10 @@ button.ghost:hover { background: #4f8ef71a; }
 /* ---------- Status bar ---------- */
 
 #statusbar {
+  position: relative; /* see #toolbar */
   display: flex;
+  flex: none;
+  flex-wrap: wrap;
   gap: 18px;
   padding: 5px 16px;
   background: var(--bg-raised);
