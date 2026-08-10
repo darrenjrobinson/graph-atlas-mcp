@@ -1,6 +1,8 @@
 // Creates a GitHub Release with graph-atlas.db as a gzip-compressed asset, calendar-versioned
 // per PRD §7.3 (e.g. v2026.08.06). Only runs when collect-and-diff.js detected changes today.
 // Requires GITHUB_TOKEN (provided automatically by GitHub Actions) and GITHUB_REPOSITORY.
+// Needs --experimental-sqlite (release notes are built from today's rows in the DB).
+import { DatabaseSync } from 'node:sqlite';
 import { createGzip } from 'node:zlib';
 import { createReadStream, createWriteStream, existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +32,54 @@ async function githubApi(path, options = {}) {
   return res.json();
 }
 
+// Per-endpoint change list + snapshot sizes for the release body — the diff just ran, so
+// everything "what's new" needs is already in the DB. Capped per endpoint to keep the body
+// readable (GitHub's hard limit is 125k chars). Any failure falls back to the bare count
+// line: notes must never block the daily data release.
+const MAX_ROWS_PER_ENDPOINT = 40;
+
+export function buildReleaseNotes(today, changeCount) {
+  const fallback = `${changeCount} Microsoft Graph API schema change${changeCount === 1 ? '' : 's'} detected on ${today}.`;
+  try {
+    const db = new DatabaseSync(DB_PATH, { readOnly: true });
+    const lines = [fallback];
+    const endpoints = db
+      .prepare("SELECT DISTINCT endpoint FROM changes WHERE snapshot_date = ? AND source = 'self' ORDER BY endpoint")
+      .all(today);
+    for (const { endpoint } of endpoints) {
+      const rows = db
+        .prepare(
+          `SELECT change_kind, change_target, object_name, property_name
+           FROM changes WHERE snapshot_date = ? AND source = 'self' AND endpoint = ?
+           ORDER BY change_kind, object_name, property_name`,
+        )
+        .all(today, endpoint);
+      lines.push('', `### ${endpoint} (${rows.length} change${rows.length === 1 ? '' : 's'})`, '');
+      for (const r of rows.slice(0, MAX_ROWS_PER_ENDPOINT)) {
+        const target = r.property_name ? `${r.object_name}.${r.property_name}` : r.object_name;
+        lines.push(`- ${r.change_kind}${r.change_target ? ` ${r.change_target}` : ''} \`${target}\``);
+      }
+      if (rows.length > MAX_ROWS_PER_ENDPOINT) {
+        lines.push(`- …and ${rows.length - MAX_ROWS_PER_ENDPOINT} more — ask graph-atlas-mcp: get_recent_changes since=${today}`);
+      }
+    }
+    const snaps = db
+      .prepare('SELECT endpoint, entity_count, property_count, enum_count FROM snapshots WHERE snapshot_date = ? ORDER BY endpoint')
+      .all(today);
+    if (snaps.length) {
+      lines.push('', '### Snapshot sizes', '');
+      for (const s of snaps) {
+        lines.push(`- ${s.endpoint}: ${s.entity_count} entities, ${s.property_count} properties, ${s.enum_count} enums`);
+      }
+    }
+    db.close();
+    return lines.join('\n');
+  } catch (err) {
+    console.error(`Release-notes generation failed (${err.message}) — falling back to the change count.`);
+    return fallback;
+  }
+}
+
 async function main() {
   const changeCount = existsSync(CHANGE_COUNT_PATH) ? Number(readFileSync(CHANGE_COUNT_PATH, 'utf8')) : 0;
   if (changeCount === 0) {
@@ -53,7 +103,7 @@ async function main() {
     body: JSON.stringify({
       tag_name: tag,
       name: tag,
-      body: `${changeCount} Microsoft Graph API schema change${changeCount === 1 ? '' : 's'} detected on ${today}.`,
+      body: buildReleaseNotes(today, changeCount),
     }),
   });
 

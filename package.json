@@ -42,7 +42,7 @@
     "embed": "node --experimental-sqlite --env-file-if-exists=.env scripts/generate-embeddings.js",
     "build:app-ui": "node scripts/build-app-ui.js",
     "build": "tsc && tsc -p app-ui --noEmit && npm run build:app-ui",
-    "version": "node scripts/sync-server-json.js && git add server.json",
+    "version": "node scripts/sync-server-json.js && node scripts/stamp-changelog.js && git add server.json CHANGELOG.md",
     "prepublishOnly": "node scripts/sync-server-json.js && npm run build",
     "start": "node --experimental-sqlite --env-file-if-exists=.env dist/index.js"
   },

@@ -6,12 +6,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { openDatabase } from './db.js';
+import { VERSION } from './version.js';
 import * as searchChanges from './tools/search-changes.js';
 import * as getRecentChanges from './tools/get-recent-changes.js';
 import * as getObjectHistory from './tools/get-object-history.js';
 import * as getChangeDetail from './tools/get-change-detail.js';
 import * as getSnapshotSummary from './tools/get-snapshot-summary.js';
 import * as getPermissionContext from './tools/get-permission-context.js';
+import * as getServerInfo from './tools/get-server-info.js';
 import * as schemaChangeReport from './tools/schema-change-report.js';
 import * as visualizeSchemaGraph from './tools/visualize-schema-graph.js';
 import * as expandSchemaNode from './tools/expand-schema-node.js';
@@ -21,10 +23,19 @@ import * as getNodeTimeline from './tools/get-node-timeline.js';
 const APP_UI_DIR = fileURLToPath(new URL('../dist/app-ui', import.meta.url));
 const RESOURCE_URI = 'ui://graph-atlas/atlas-app.html';
 
-// package.json is the single source of truth for the version (synced into
-// server.json by scripts/sync-server-json.js and injected into the app UI
-// at bundle time by scripts/build-app-ui.js).
-const VERSION = (JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8')) as { version: string }).version;
+// Injected into the host's context at connect time — the model's only zero-cost view of
+// what this server is. Keep the two release channels distinct: "a new Graph Atlas release"
+// is ambiguous between a daily database refresh and a semver server release.
+const INSTRUCTIONS =
+  `Graph Atlas (server v${VERSION}) tracks Microsoft Graph API schema changes on the v1.0 and beta endpoints ` +
+  `across Entra ID, Identity Governance, and related workloads, enriched with permission/role context and an ` +
+  `interactive schema visualiser. Two release channels exist and users say "release" for either: the snapshot ` +
+  `DATABASE is re-released daily when changes are detected, as calendar-tagged GitHub releases (e.g. v2026.08.07) ` +
+  `whose notes summarise that day's schema changes; the SERVER code is released on npm with semver versions ` +
+  `(e.g. v${VERSION}) whose GitHub release notes carry the changelog. When asked about this server itself or ` +
+  `"what's new in the latest Graph Atlas release", call get_server_info first — it reports the running version, ` +
+  `its changelog entry, data freshness, and release links. For what changed in the Microsoft Graph schema, use ` +
+  `get_recent_changes or search_changes.`;
 
 /** _meta helpers — ship both the spec key and the deprecated flat key for host compat. */
 function uiMeta(visibility: string[], withResource: boolean) {
@@ -40,7 +51,7 @@ const uiResourceMeta = { ui: { csp: { connectDomains: [], resourceDomains: [] },
 async function main() {
   const db = await openDatabase();
 
-  const server = new McpServer({ name: 'graph-atlas', version: VERSION });
+  const server = new McpServer({ name: 'graph-atlas', version: VERSION }, { instructions: INSTRUCTIONS });
 
   // The UI is optional — every tool still works without it (e.g. before the first build).
   let appHtml: string | null = null;
@@ -51,7 +62,7 @@ async function main() {
   }
   const hasUi = appHtml !== null;
 
-  for (const tool of [searchChanges, getRecentChanges, getObjectHistory, getChangeDetail, getSnapshotSummary, getPermissionContext, schemaChangeReport]) {
+  for (const tool of [searchChanges, getRecentChanges, getObjectHistory, getChangeDetail, getSnapshotSummary, getPermissionContext, getServerInfo, schemaChangeReport]) {
     server.registerTool(
       tool.name,
       { description: tool.description, inputSchema: tool.inputSchema },

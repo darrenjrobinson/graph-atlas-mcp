@@ -53,6 +53,6 @@ jobs:
           git push
 
       - name: Create release (if changes detected)
-        run: node scripts/create-release.js
+        run: node --experimental-sqlite scripts/create-release.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

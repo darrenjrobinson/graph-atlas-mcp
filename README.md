@@ -2,6 +2,10 @@
 
 An MCP server that tracks schema changes across the Microsoft Graph API — both the changes Microsoft documents and the ones it doesn't. Covers the full Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection surface, seeded with a year of history at launch. Ships with an interactive [schema visualiser](#schema-visualiser) rendered inside the MCP client via MCP Apps.
 
+[![npm](https://img.shields.io/npm/v/graph-atlas-mcp)](https://www.npmjs.com/package/graph-atlas-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/graph-atlas-mcp)](https://www.npmjs.com/package/graph-atlas-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ![](./img/Microsoft%20Graph%20Atlas%20MCP.png)
 
 ## Why
@@ -107,6 +111,7 @@ falls back to `./graph-atlas.db` in the current working directory.
 | `get_object_history` | Full change history for one object (e.g. `group`, `accessPackage`), oldest to newest. Matches case-insensitively across sources. |
 | `get_change_detail` | Full detail for a single change record, plus related changes from the same day/object. |
 | `get_snapshot_summary` | Entity/property/enum counts per snapshot — "how big is Graph API right now?" |
+| `get_server_info` | About the server itself — running version, changelog entry, data freshness, and the two release channels (daily calendar-tagged database releases vs semver npm server releases). |
 | `get_permission_context` | Which permissions touch a Graph object, what each unlocks, who can grant them (heuristic — see limitations), and its recent changes. |
 | `schema_change_report` | Structured JSON (no UI) of the schema/permission/role graph — nodes + edges + change-activity counts, for reasoning over. |
 | `visualize_schema_graph` | Opens the interactive Graph Atlas visualiser inside the MCP client (via [MCP Apps](https://github.com/modelcontextprotocol/ext-apps)) — a D3 force-directed graph with search, expand, and per-node detail. See below. |
