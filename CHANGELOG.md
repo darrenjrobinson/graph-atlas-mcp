@@ -11,6 +11,8 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-10
+
 ### Added
 
 - Expand/Minimise toggle in the visualiser toolbar. The automatic fullscreen claim is
