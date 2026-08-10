@@ -11,6 +11,8 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-10
+
 ### Added
 
 - `get_server_info` tool — reports the running server version, its changelog entry, data
