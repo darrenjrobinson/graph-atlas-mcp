@@ -299,7 +299,7 @@ async function claimSpace() {
   try {
     const ctx = app.getHostContext?.();
     const mode = ctx?.displayMode ?? 'inline';
-    if (mode !== 'fullscreen' && (!ctx?.availableDisplayModes || ctx.availableDisplayModes.includes('fullscreen'))) {
+    if (mode !== 'fullscreen' && ctx?.availableDisplayModes?.includes('fullscreen')) {
       await app.requestDisplayMode({ mode: 'fullscreen' });
     }
   } catch {
