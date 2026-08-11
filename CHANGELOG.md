@@ -11,6 +11,31 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-10
+
+### Added
+
+- Expand/Minimise toggle in the visualiser toolbar. The automatic fullscreen claim is
+  one-shot by design, so after minimising there was no way back to full canvas from
+  inside the app; the toggle re-requests fullscreen (and can hand the surface back).
+  Hidden on hosts without display-mode support.
+
+### Fixed
+
+- Widget height after a fullscreen → minimise → reopen cycle in Claude Desktop. The app
+  echoed the host's container height back as its own desired height; host-context merges
+  are partial, so a stale fullscreen height became the inline card height (an elongated
+  widget). Inline now reports a fixed 600px preference capped by the host's constraint,
+  size reports are deduplicated, and no re-reports are sent while fullscreen.
+- Graph pinned to the top-left when the visualiser first rendered in a hidden or
+  collapsed iframe, and focus drifting off-centre when the container changed shape. The
+  canvas now defers centering until it has real dimensions and re-centres the focus on
+  material container resizes — unless the user has panned or zoomed manually.
+- Overlapping UI (legend, detail panel, welcome card stacked over the toolbar) when the
+  host handed the app a very short frame: the toolbar and status bar now stack correctly
+  and wrap instead of overflowing, the stage has a minimum height, and the legend scrolls
+  instead of growing past the stage.
+
 ## [0.2.0] - 2026-08-10
 
 ### Added

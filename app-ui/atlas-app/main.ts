@@ -227,21 +227,37 @@ function initUi() {
     onReset: resetCanvas,
   });
   initSearch(loadAndFocus);
+  initExpandToggle();
   store.subscribe(onStoreChange);
 }
 
 // ---------- display mode ----------
 
-const INLINE_HEIGHT = 820; // a force graph needs room even when stuck inline
+const INLINE_HEIGHT = 600; // preferred inline height — enough room for the graph without dominating the chat
 
 let spaceClaimed = false;
+let lastReportedHeight = 0;
 
-/** The tallest height the host will give us, per its container dimensions. */
+/**
+ * The height to ask the host for. In fullscreen the host owns the surface, so
+ * fill whatever it says it has. Inline (and pip), report our preference capped
+ * by the host's constraint — never echo the granted height back: host-context
+ * merges are partial, so containerDimensions can still hold a stale fullscreen
+ * value right after a minimize/restore, and echoing it made the inline card
+ * fullscreen-tall. The cap turns a stale value into a harmless upper bound.
+ * A host bound is never clamped upward — a 300px slot gets a 300px report;
+ * the stage's CSS min-height handles the visual degeneracy.
+ */
 function desiredHeight(): number {
   try {
-    const dims = app.getHostContext?.()?.containerDimensions as { height?: number; maxHeight?: number } | undefined;
-    const h = dims?.height ?? dims?.maxHeight;
-    if (typeof h === 'number' && Number.isFinite(h) && h > 0) return Math.max(400, Math.floor(h));
+    const ctx = app.getHostContext?.();
+    const dims = ctx?.containerDimensions as { height?: number; maxHeight?: number } | undefined;
+    const avail = dims?.height ?? dims?.maxHeight;
+    const hasAvail = typeof avail === 'number' && Number.isFinite(avail) && avail > 0;
+    if (ctx?.displayMode === 'fullscreen') {
+      return hasAvail ? Math.floor(avail) : INLINE_HEIGHT;
+    }
+    return hasAvail ? Math.min(INLINE_HEIGHT, Math.floor(avail)) : INLINE_HEIGHT;
   } catch {
     // host context optional
   }
@@ -251,8 +267,21 @@ function desiredHeight(): number {
 /** Report our size — hosts that size the iframe off the app's reported height need
  *  this even when fullscreen was granted (Claude Desktop's app surface does). */
 function reportSize() {
+  let mode = 'inline';
   try {
-    void app.sendSizeChanged({ height: desiredHeight() }).catch(() => {});
+    mode = app.getHostContext?.()?.displayMode ?? 'inline';
+  } catch {
+    // host context optional
+  }
+  // After the first report, stay quiet while fullscreen: the host owns geometry
+  // there, and a fullscreen-height report would become the sticky height the
+  // host restores to inline.
+  if (mode === 'fullscreen' && lastReportedHeight) return;
+  const h = desiredHeight();
+  if (h === lastReportedHeight) return; // unchanged — don't ping-pong with the host
+  lastReportedHeight = h;
+  try {
+    void app.sendSizeChanged({ height: h }).catch(() => {});
   } catch {
     // host-default size it is
   }
@@ -270,13 +299,46 @@ async function claimSpace() {
   try {
     const ctx = app.getHostContext?.();
     const mode = ctx?.displayMode ?? 'inline';
-    if (mode !== 'fullscreen' && (!ctx?.availableDisplayModes || ctx.availableDisplayModes.includes('fullscreen'))) {
+    if (mode !== 'fullscreen' && ctx?.availableDisplayModes?.includes('fullscreen')) {
       await app.requestDisplayMode({ mode: 'fullscreen' });
     }
   } catch {
     // host without display-mode support
   }
   reportSize();
+  syncExpandButton();
+}
+
+// The fullscreen claim above is one-shot, so once the user minimizes there'd be
+// no way back to full canvas from inside the app — the toolbar toggle re-requests
+// it (and hands the surface back). Starts hidden and shows only once the host
+// advertises fullscreen (the SDK's gating pattern for requestDisplayMode);
+// visibility is re-derived on every sync so a capability arriving in a later
+// host-context update reveals it. A failed request hides it again.
+function syncExpandButton(mode?: string) {
+  const btn = $('expand-btn') as HTMLButtonElement;
+  try {
+    const ctx = app.getHostContext?.();
+    btn.hidden = !ctx?.availableDisplayModes?.includes('fullscreen');
+    const full = (mode ?? ctx?.displayMode) === 'fullscreen';
+    btn.textContent = full ? 'Minimise' : 'Expand';
+    btn.title = full ? 'Return to inline view' : 'Expand to fullscreen';
+  } catch {
+    btn.hidden = true; // no host context — no display-mode support to offer
+  }
+}
+
+function initExpandToggle() {
+  $('expand-btn').addEventListener('click', async () => {
+    try {
+      const target = app.getHostContext?.()?.displayMode === 'fullscreen' ? 'inline' : 'fullscreen';
+      const result = await app.requestDisplayMode({ mode: target });
+      syncExpandButton(result.mode);
+    } catch {
+      ($('expand-btn') as HTMLButtonElement).hidden = true; // host can't switch modes
+    }
+    reportSize();
+  });
 }
 
 // ---------- host theme ----------
@@ -343,6 +405,7 @@ app.onhostcontextchanged = (params) => {
   applyHostTheme((params as { hostContext?: { theme?: string } })?.hostContext ?? (params as { theme?: string }));
   // container dimensions / display mode may have changed — keep our height in step
   if (spaceClaimed) reportSize();
+  syncExpandButton();
 };
 
 initUi();
@@ -355,6 +418,7 @@ app
     } catch {
       /* host context optional */
     }
+    syncExpandButton();
   })
   .catch((err) => {
     console.error(err);

@@ -1,4 +1,5 @@
 graph-atlas-mcp-prd.md
+graph-atlas-mcp-blog-post.md
 
 # one-off local seed utility, not part of the committed repo
 scripts/seed-from-entra-ms.js

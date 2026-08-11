@@ -32,6 +32,9 @@ let handlers: CanvasCallbacks = {};
 let lastNodeCount = 0;
 let lastEdgeCount = 0;
 let lastClick: { id: string | null; t: number } = { id: null, t: 0 };
+let lastCenterId: string | null = null; // last programmatic center target
+let lastFitSize = { w: 0, h: 0 }; // rect size at the last successful fit
+let userAdjusted = false; // user panned/zoomed since our last fit
 
 const DBLCLICK_MS = 450;
 let currentFilters: { edgeKinds: Set<EdgeKind>; nodeKinds: Set<NodeKind> } = {
@@ -53,7 +56,10 @@ export function initCanvas(container: HTMLElement, callbacks: CanvasCallbacks = 
   zoomBehavior = d3
     .zoom<SVGSVGElement, unknown>()
     .scaleExtent([0.15, 4])
-    .on('zoom', (event) => viewport.attr('transform', event.transform));
+    .on('zoom', (event) => {
+      if (event.sourceEvent) userAdjusted = true; // real gesture, not our own transition
+      viewport.attr('transform', event.transform);
+    });
 
   svg.call(zoomBehavior).on('dblclick.zoom', null);
   svg.on('click', (event) => {
@@ -84,7 +90,32 @@ export function initCanvas(container: HTMLElement, callbacks: CanvasCallbacks = 
     new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting) && simulation.nodes().length) {
         simulation.alpha(Math.max(simulation.alpha(), 0.3)).restart();
+        if (lastFitSize.w < 10) refit(); // a fit deferred while hidden — finish it now
       }
+    }).observe(container);
+  }
+
+  // centerOn() measures the container exactly once, so a fit computed against a
+  // hidden (0×0) iframe pins the graph top-left, and a host that reshapes the
+  // container later (minimize/restore, panel resize) leaves the focus off-center.
+  // Watch real geometry and re-fit — but never report sizes from here: our report
+  // sets the iframe size this observer measures, which would be a feedback loop.
+  if (typeof ResizeObserver === 'function') {
+    let raf = 0;
+    new ResizeObserver(() => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const { width, height } = container.getBoundingClientRect();
+        if (width < 10 || height < 10) return;
+        if (lastFitSize.w < 10 || lastFitSize.h < 10) {
+          // first real size after a hidden/collapsed start — the earlier fit was
+          // computed against nothing; redo it and spread anything unlaid-out
+          if (simulation.nodes().length) simulation.alpha(Math.max(simulation.alpha(), 0.3)).restart();
+          refit();
+        } else if (!userAdjusted && (Math.abs(width - lastFitSize.w) > 24 || Math.abs(height - lastFitSize.h) > 24)) {
+          refit(); // container reshaped materially — keep the focus centered
+        }
+      });
     }).observe(container);
   }
 }
@@ -238,11 +269,35 @@ export function render(snapshot: StoreSnapshot) {
   applyFilters();
 }
 
-/** Smoothly pan/zoom so the given node is centered (context flip). */
+/**
+ * Smoothly pan/zoom so the given node is centered (context flip). Resets the
+ * zoom to scale 1. Against a hidden/collapsed container the fit is deferred:
+ * the target is remembered and the resize/visibility observers finish the job
+ * once the canvas has real dimensions.
+ */
 export function centerOn(nodeId: string, snapshot: StoreSnapshot) {
+  lastCenterId = nodeId;
   const node = snapshot.nodes.find((n) => n.id === nodeId);
   if (!node || node.x == null) return;
   const { width, height } = (svg.node() as SVGSVGElement).getBoundingClientRect();
+  if (width < 10 || height < 10) return;
+  userAdjusted = false;
+  lastFitSize = { w: width, h: height };
   const t = d3.zoomIdentity.translate(width / 2 - node.x, height / 2 - (node.y ?? 0));
   svg.transition().duration(600).call(zoomBehavior.transform, t);
+}
+
+/** Re-center the last center target at the current zoom scale — used when the
+ *  container changes shape, so unlike centerOn it must not reset the zoom. */
+function refit() {
+  if (!lastCenterId) return;
+  const { width, height } = (svg.node() as SVGSVGElement).getBoundingClientRect();
+  if (width < 10 || height < 10) return;
+  const node = simulation.nodes().find((n) => n.id === lastCenterId);
+  if (!node || node.x == null) return;
+  userAdjusted = false;
+  lastFitSize = { w: width, h: height };
+  const k = d3.zoomTransform(svg.node() as SVGSVGElement).k;
+  const t = d3.zoomIdentity.translate(width / 2 - k * node.x, height / 2 - k * (node.y ?? 0)).scale(k);
+  svg.transition().duration(200).call(zoomBehavior.transform, t);
 }
