@@ -234,7 +234,6 @@ function initUi() {
 // ---------- display mode ----------
 
 const INLINE_HEIGHT = 600; // preferred inline height — enough room for the graph without dominating the chat
-const MIN_HEIGHT = 400;
 
 let spaceClaimed = false;
 let lastReportedHeight = 0;
@@ -246,6 +245,8 @@ let lastReportedHeight = 0;
  * merges are partial, so containerDimensions can still hold a stale fullscreen
  * value right after a minimize/restore, and echoing it made the inline card
  * fullscreen-tall. The cap turns a stale value into a harmless upper bound.
+ * A host bound is never clamped upward — a 300px slot gets a 300px report;
+ * the stage's CSS min-height handles the visual degeneracy.
  */
 function desiredHeight(): number {
   try {
@@ -254,9 +255,9 @@ function desiredHeight(): number {
     const avail = dims?.height ?? dims?.maxHeight;
     const hasAvail = typeof avail === 'number' && Number.isFinite(avail) && avail > 0;
     if (ctx?.displayMode === 'fullscreen') {
-      return hasAvail ? Math.max(MIN_HEIGHT, Math.floor(avail)) : INLINE_HEIGHT;
+      return hasAvail ? Math.floor(avail) : INLINE_HEIGHT;
     }
-    return Math.max(MIN_HEIGHT, Math.min(INLINE_HEIGHT, hasAvail ? Math.floor(avail) : INLINE_HEIGHT));
+    return hasAvail ? Math.min(INLINE_HEIGHT, Math.floor(avail)) : INLINE_HEIGHT;
   } catch {
     // host context optional
   }
@@ -310,21 +311,20 @@ async function claimSpace() {
 
 // The fullscreen claim above is one-shot, so once the user minimizes there'd be
 // no way back to full canvas from inside the app — the toolbar toggle re-requests
-// it (and hands the surface back). Shown unless the host declares fullscreen
-// unavailable; a failed request hides it (host without display-mode support).
+// it (and hands the surface back). Starts hidden and shows only once the host
+// advertises fullscreen (the SDK's gating pattern for requestDisplayMode);
+// visibility is re-derived on every sync so a capability arriving in a later
+// host-context update reveals it. A failed request hides it again.
 function syncExpandButton(mode?: string) {
   const btn = $('expand-btn') as HTMLButtonElement;
   try {
     const ctx = app.getHostContext?.();
-    if (ctx?.availableDisplayModes && !ctx.availableDisplayModes.includes('fullscreen')) {
-      btn.hidden = true;
-      return;
-    }
+    btn.hidden = !ctx?.availableDisplayModes?.includes('fullscreen');
     const full = (mode ?? ctx?.displayMode) === 'fullscreen';
     btn.textContent = full ? 'Minimise' : 'Expand';
     btn.title = full ? 'Return to inline view' : 'Expand to fullscreen';
   } catch {
-    // host context optional — leave the button as-is
+    btn.hidden = true; // no host context — no display-mode support to offer
   }
 }
 
