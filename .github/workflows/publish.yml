@@ -29,21 +29,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # prepublishOnly syncs server.json and runs the full build
-      - name: Publish
-        run: npm publish
-
-      # Release notes come from CHANGELOG.md — `npm version` stamped this version's
-      # section, so extraction fails loudly if the flow was skipped. --verify-tag
-      # insists the semver tag was pushed (per the flow above) rather than silently
-      # tagging whatever main happens to be.
-      - name: Create GitHub release with changelog notes
+      # Everything that can be checked must be checked BEFORE npm publish: publishing to npm
+      # is irreversible, so a precondition that used to fail afterwards (the missing tag,
+      # which --verify-tag caught only at the release step) left the package published, the
+      # release absent and the registry step skipped — unrecoverable by re-running.
+      - name: Preflight
+        id: preflight
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if ! gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "::error::Tag v$VERSION does not exist on the remote. Push it first: git push origin v$VERSION"
+            exit 1
+          fi
+
+          # Notes must extract before publishing too — an unstamped CHANGELOG is the other
+          # way this used to fail after npm had already gone out.
           node scripts/extract-changelog.js "$VERSION" > release-notes.md
-          gh release create "v$VERSION" --verify-tag --title "v$VERSION" --notes-file release-notes.md
+          test -s release-notes.md
+
+          # A tag on an older commit is normal when re-running to finish a partial publish,
+          # so this informs rather than blocks.
+          TAG_SHA=$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/v$VERSION" --jq '.object.sha')
+          if [ "$TAG_SHA" != "$GITHUB_SHA" ]; then
+            echo "::warning::Tag v$VERSION points at $TAG_SHA, not this run's commit $GITHUB_SHA."
+          fi
+
+      # prepublishOnly syncs server.json and runs the full build. Each publish step below is
+      # guarded so a run that failed partway can be re-dispatched to finish the rest.
+      - name: Publish to npm
+        env:
+          VERSION: ${{ steps.preflight.outputs.version }}
+        run: |
+          set -euo pipefail
+          if npm view "graph-atlas-mcp@$VERSION" version >/dev/null 2>&1; then
+            echo "graph-atlas-mcp@$VERSION is already on npm — skipping."
+          else
+            npm publish
+          fi
+
+      # Release notes come from CHANGELOG.md — `npm version` stamped this version's
+      # section. --verify-tag insists the semver tag was pushed (per the flow above)
+      # rather than silently tagging whatever main happens to be.
+      - name: Create GitHub release with changelog notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.preflight.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists — skipping."
+          else
+            gh release create "v$VERSION" --verify-tag --title "v$VERSION" --notes-file release-notes.md
+          fi
 
       # GitHub OIDC proves ownership of the io.github.darrenjrobinson/* namespace —
       # no stored tokens or secrets required.

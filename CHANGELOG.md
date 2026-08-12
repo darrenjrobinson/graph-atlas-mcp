@@ -11,6 +11,16 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+### Fixed
+
+- Publish workflow leaving a release half-done when a precondition failed. The tag check
+  (`--verify-tag`) and changelog extraction both ran *after* `npm publish`, so publishing
+  v0.3.1 without a pushed tag put the package on npm and then aborted, with no GitHub
+  release and no MCP Registry entry — and no way to finish, since re-running failed on the
+  already-published version. Preconditions now run before anything is published, and the
+  npm and release steps are individually guarded so a partial run can be re-dispatched to
+  complete the rest.
+
 ## [0.3.1] - 2026-08-12
 
 ### Fixed
