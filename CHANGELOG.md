@@ -22,6 +22,13 @@ GitHub release notes (scripts/extract-changelog.js).
   up, so a fresh install had no database at all and failed to start, while existing
   installs silently stopped updating. Release selection now scans the release list for the
   newest calendar-tagged (`v2026.08.11`) entry and ignores semver server releases.
+- Daily collection restoring its database from the wrong release. The collect workflow ran
+  a bare `gh release download`, which targets the same "latest" release and so found no
+  database asset once a server release outranked the day's data release. It then started
+  from an empty database — but the diff reads `snapshots/` from git, so changes were still
+  detected and published, releasing a database stripped of all history, permissions, roles
+  and embeddings over the good one. The workflow now resolves the newest calendar-tagged
+  release explicitly, and fails loudly instead of starting fresh when a restore fails.
 - `get_server_info` reporting a semver server tag as `latest_data_release`, normalised to
   a nonsensical date (`v0.3.0` → `0-3-0`). That date was still compared against real
   snapshot dates, so `local_data_current` reported `true` regardless of how stale the
