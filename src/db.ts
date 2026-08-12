@@ -30,10 +30,18 @@ function latestSnapshotDate(db: DatabaseSync): string | null {
 async function tryAutoDownload(dbPath: string): Promise<void> {
   try {
     const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
-      headers: { Accept: 'application/vnd.github+json' },
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'graph-atlas-mcp',
+      },
     });
     if (!res.ok) {
-      log(`auto-download skipped (no release found: HTTP ${res.status})`);
+      if (res.status === 404) {
+        log('auto-download skipped (no release found yet)');
+      } else {
+        log(`auto-download skipped (GitHub releases API HTTP ${res.status})`);
+      }
       return;
     }
     const release = (await res.json()) as { tag_name?: string; assets?: Array<{ name: string; browser_download_url: string }> };
