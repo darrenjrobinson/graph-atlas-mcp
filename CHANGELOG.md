@@ -11,6 +11,8 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-12
+
 ### Fixed
 
 - Database auto-download and the data-currency check selecting the wrong release. Both

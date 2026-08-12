@@ -1,6 +1,6 @@
 {
   "name": "graph-atlas-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "mcpName": "io.github.darrenjrobinson/graph-atlas-mcp",
   "description": "MCP server tracking undocumented and documented Microsoft Graph API schema changes across Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection — with an interactive MCP Apps schema visualiser.",
   "type": "module",
