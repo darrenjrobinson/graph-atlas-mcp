@@ -4,8 +4,8 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
 import * as sqliteVec from 'sqlite-vec';
+import { fetchLatestDataRelease } from './github-releases.js';
 
-const GITHUB_REPO = 'darrenjrobinson/graph-atlas-mcp';
 const CACHE_DIR = join(homedir(), '.graph-atlas-mcp');
 const CACHE_DB_PATH = join(CACHE_DIR, 'graph-atlas.db');
 const LOCAL_DEV_DB_PATH = join(process.cwd(), 'graph-atlas.db');
@@ -29,25 +29,14 @@ function latestSnapshotDate(db: DatabaseSync): string | null {
 
 async function tryAutoDownload(dbPath: string): Promise<void> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-        'User-Agent': 'graph-atlas-mcp',
-      },
-    });
-    if (!res.ok) {
-      if (res.status === 404) {
-        log('auto-download skipped (no release found yet)');
-      } else {
-        log(`auto-download skipped (GitHub releases API HTTP ${res.status})`);
-      }
+    const release = await fetchLatestDataRelease();
+    if (!release) {
+      log('auto-download skipped (no calendar-tagged data release found yet)');
       return;
     }
-    const release = (await res.json()) as { tag_name?: string; assets?: Array<{ name: string; browser_download_url: string }> };
-    const asset = release.assets?.find((a) => a.name === 'graph-atlas.db' || a.name === 'graph-atlas.db.gz');
+    const asset = release.assets.find((a) => a.name === 'graph-atlas.db' || a.name === 'graph-atlas.db.gz');
     if (!asset) {
-      log('auto-download skipped (release has no graph-atlas.db asset)');
+      log(`auto-download skipped (data release ${release.tag} has no graph-atlas.db asset)`);
       return;
     }
 
@@ -61,15 +50,14 @@ async function tryAutoDownload(dbPath: string): Promise<void> {
         localDate = null;
       }
     }
-    // Release tags are calendar-versioned with dots (v2026.08.07); snapshot dates use
-    // dashes (2026-08-07) — normalize before comparing or the check never matches.
-    const remoteDate = release.tag_name?.replace(/^v/, '').replaceAll('.', '-') ?? null;
-    if (localDate && remoteDate && localDate >= remoteDate) {
-      log(`local cache (${localDate}) is up to date with release ${remoteDate}, skipping download`);
+    // Both sides are YYYY-MM-DD (the tag is normalized in fetchLatestDataRelease), so a
+    // lexicographic compare is a date compare.
+    if (localDate && localDate >= release.date) {
+      log(`local cache (${localDate}) is up to date with release ${release.date}, skipping download`);
       return;
     }
 
-    log(`downloading ${asset.name} from release ${release.tag_name}...`);
+    log(`downloading ${asset.name} from release ${release.tag}...`);
     const assetRes = await fetch(asset.browser_download_url);
     if (!assetRes.ok) {
       log(`auto-download failed (HTTP ${assetRes.status}), using existing local cache if present`);

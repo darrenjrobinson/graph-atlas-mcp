@@ -11,6 +11,27 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+### Fixed
+
+- Database auto-download and the data-currency check selecting the wrong release. Both
+  asked GitHub for `/releases/latest`, which returns whichever release published most
+  recently — a semver server release whenever the npm publish lands after that day's data
+  release. With v0.3.0 as "latest" the auto-downloader found no database asset and gave
+  up, so a fresh install had no database at all and failed to start, while existing
+  installs silently stopped updating. Release selection now scans the release list for the
+  newest calendar-tagged (`v2026.08.11`) entry and ignores semver server releases.
+- `get_server_info` reporting a semver server tag as `latest_data_release`, normalised to
+  a nonsensical date (`v0.3.0` → `0-3-0`). That date was still compared against real
+  snapshot dates, so `local_data_current` reported `true` regardless of how stale the
+  loaded database was.
+- Visualiser height reports never clamping a host-provided bound upward — a 300px inline
+  slot now gets a 300px report instead of 400px (the stage's CSS min-height covers visual
+  degeneracy).
+- The Expand toggle now starts hidden and appears only once the host advertises fullscreen
+  in `availableDisplayModes`, with visibility re-derived on every sync so a capability
+  arriving later still reveals it. Starting hidden also prevents `requestDisplayMode` calls
+  before the connection handshake completes.
+
 ## [0.3.0] - 2026-08-10
 
 ### Added
