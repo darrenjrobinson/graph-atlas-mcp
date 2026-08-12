@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
+import { fetchLatestDataRelease, GITHUB_REPO } from '../github-releases.js';
 import { PACKAGE_ROOT, VERSION } from '../version.js';
 
 export const name = 'get_server_info';
@@ -13,7 +14,6 @@ export const description =
 
 export const inputSchema = {};
 
-const GITHUB_REPO = 'darrenjrobinson/graph-atlas-mcp';
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 
 /**
@@ -22,19 +22,8 @@ const REPO_URL = `https://github.com/${GITHUB_REPO}`;
  */
 async function latestDataRelease(): Promise<{ tag: string; date: string; published_at: string } | null> {
   try {
-    const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
-      headers: { Accept: 'application/vnd.github+json' },
-      signal: AbortSignal.timeout(3500),
-    });
-    if (!res.ok) return null;
-    const release = (await res.json()) as { tag_name?: string; published_at?: string };
-    if (!release.tag_name) return null;
-    // Release tags are calendar-versioned with dots (v2026.08.08); snapshot dates use dashes.
-    return {
-      tag: release.tag_name,
-      date: release.tag_name.replace(/^v/, '').replaceAll('.', '-'),
-      published_at: release.published_at ?? '',
-    };
+    const release = await fetchLatestDataRelease(3500);
+    return release && { tag: release.tag, date: release.date, published_at: release.published_at };
   } catch {
     return null;
   }

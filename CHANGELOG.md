@@ -11,6 +11,36 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-12
+
+### Fixed
+
+- Database auto-download and the data-currency check selecting the wrong release. Both
+  asked GitHub for `/releases/latest`, which returns whichever release published most
+  recently — a semver server release whenever the npm publish lands after that day's data
+  release. With v0.3.0 as "latest" the auto-downloader found no database asset and gave
+  up, so a fresh install had no database at all and failed to start, while existing
+  installs silently stopped updating. Release selection now scans the release list for the
+  newest calendar-tagged (`v2026.08.11`) entry and ignores semver server releases.
+- Daily collection restoring its database from the wrong release. The collect workflow ran
+  a bare `gh release download`, which targets the same "latest" release and so found no
+  database asset once a server release outranked the day's data release. It then started
+  from an empty database — but the diff reads `snapshots/` from git, so changes were still
+  detected and published, releasing a database stripped of all history, permissions, roles
+  and embeddings over the good one. The workflow now resolves the newest calendar-tagged
+  release explicitly, and fails loudly instead of starting fresh when a restore fails.
+- `get_server_info` reporting a semver server tag as `latest_data_release`, normalised to
+  a nonsensical date (`v0.3.0` → `0-3-0`). That date was still compared against real
+  snapshot dates, so `local_data_current` reported `true` regardless of how stale the
+  loaded database was.
+- Visualiser height reports never clamping a host-provided bound upward — a 300px inline
+  slot now gets a 300px report instead of 400px (the stage's CSS min-height covers visual
+  degeneracy).
+- The Expand toggle now starts hidden and appears only once the host advertises fullscreen
+  in `availableDisplayModes`, with visibility re-derived on every sync so a capability
+  arriving later still reveals it. Starting hidden also prevents `requestDisplayMode` calls
+  before the connection handshake completes.
+
 ## [0.3.0] - 2026-08-10
 
 ### Added

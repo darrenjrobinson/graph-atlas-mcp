@@ -25,12 +25,28 @@ jobs:
 
       # $metadata is publicly accessible without authentication (verified against the live
       # endpoints) — no Entra app registration or client credentials required (PRD §9).
-      - name: Download latest released DB (if any)
+      # Must resolve the newest CALENDAR-TAGGED release explicitly: a bare `gh release
+      # download` targets the "latest" release, which is a semver server release (v0.3.0)
+      # whenever the npm publish lands after that day's data release. That download finds no
+      # graph-atlas.db.gz, and starting fresh here is destructive rather than merely empty —
+      # the diff reads snapshots/ from git, so changes are still detected and released, but
+      # against a database with no history, permissions, roles, or embeddings.
+      - name: Download the newest data-release DB
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download --pattern 'graph-atlas.db.gz' --output graph-atlas.db.gz --clobber || echo "no prior release — starting fresh"
-          if [ -f graph-atlas.db.gz ]; then gunzip -f graph-atlas.db.gz; fi
+          set -euo pipefail
+          TAG=$(gh release list --limit 100 --json tagName \
+            --jq '[.[] | select(.tagName | test("^v[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}$"))][0].tagName // ""')
+          if [ -z "$TAG" ]; then
+            echo "No calendar-tagged data release exists yet — establishing the first baseline."
+            exit 0
+          fi
+          echo "Restoring database from data release $TAG"
+          # No `|| true` fallback: a failure here means an existing history could not be
+          # restored, and continuing would publish a gutted database over it.
+          gh release download "$TAG" --pattern 'graph-atlas.db.gz' --output graph-atlas.db.gz --clobber
+          gunzip -f graph-atlas.db.gz
 
       - name: Collect and diff
         run: node --experimental-sqlite scripts/collect-and-diff.js
