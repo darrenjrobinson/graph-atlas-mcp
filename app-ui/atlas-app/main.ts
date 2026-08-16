@@ -228,6 +228,7 @@ function initUi() {
   });
   initSearch(loadAndFocus);
   initExpandToggle();
+  initCreditLink();
   store.subscribe(onStoreChange);
 }
 
@@ -357,6 +358,27 @@ function applyHostTheme(ctx: { theme?: string } | undefined) {
 declare const __ATLAS_VERSION__: string;
 
 $('stat-version').textContent = `v${__ATLAS_VERSION__}`;
+
+// A conforming host sandboxes this iframe with scripts/same-origin but without
+// allow-popups, so the anchor's target="_blank" is a silent no-op there — ui/open-link is
+// the host-mediated route. getHostCapabilities() is undefined until connected, which is
+// also exactly how a plain-browser preview looks, so in that case leave the anchor to
+// navigate on its own rather than intercepting a click we can't service.
+function initCreditLink() {
+  const link = $('stat-credit-link') as HTMLAnchorElement;
+  link.addEventListener('click', (e) => {
+    if (!app.getHostCapabilities()?.openLinks) return;
+    e.preventDefault();
+    // The host may still refuse (blocked domain, user cancelled); say so rather than
+    // leaving the click looking broken. The title attribute carries the URL either way.
+    app
+      .openLink({ url: link.href })
+      .then(({ isError }) => {
+        if (isError) setStatus('The host declined to open darrenjrobinson.com', true);
+      })
+      .catch(() => setStatus('The host declined to open darrenjrobinson.com', true));
+  });
+}
 
 // autoResize (default on) measures the document's natural height — useless for a
 // full-height flex app; claimSpace() owns sizing instead.
