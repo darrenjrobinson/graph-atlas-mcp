@@ -11,6 +11,8 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-16
+
 ### Added
 
 - Attribution in the app's status bar: "Darren Robinson" (linking to darrenjrobinson.com)
