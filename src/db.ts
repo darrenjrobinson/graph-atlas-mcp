@@ -10,6 +10,16 @@ const CACHE_DIR = join(homedir(), '.graph-atlas-mcp');
 const CACHE_DB_PATH = join(CACHE_DIR, 'graph-atlas.db');
 const LOCAL_DEV_DB_PATH = join(process.cwd(), 'graph-atlas.db');
 
+// openDatabase() awaits the auto-download, so an unbounded request here stalls server
+// startup. Neither fetch has a deadline of its own that helps: Node's fetch falls back to
+// undici's 300s header/body defaults, and fetchLatestDataRelease pages up to MAX_PAGES
+// times, so a stalled connection (dropped TCP, captive portal, a CDN that accepts and then
+// sends nothing) can hold startup for far longer than that while a perfectly usable cached
+// database sits on disk — and it presents as "the server is hung", the worst thing to
+// diagnose. Both budgets fail into the catch below, which keeps the local cache.
+const DISCOVERY_TIMEOUT_MS = 8_000; // whole-search budget across the paged release lookup
+const DOWNLOAD_TIMEOUT_MS = 120_000; // the asset is ~7MB gzipped
+
 function log(message: string): void {
   // MCP stdio transport reserves stdout for JSON-RPC — all diagnostics go to stderr.
   console.error(`[graph-atlas-mcp] ${message}`);
@@ -29,7 +39,7 @@ function latestSnapshotDate(db: DatabaseSync): string | null {
 
 async function tryAutoDownload(dbPath: string): Promise<void> {
   try {
-    const release = await fetchLatestDataRelease();
+    const release = await fetchLatestDataRelease(DISCOVERY_TIMEOUT_MS);
     if (!release) {
       log('auto-download skipped (no calendar-tagged data release found yet)');
       return;
@@ -58,7 +68,9 @@ async function tryAutoDownload(dbPath: string): Promise<void> {
     }
 
     log(`downloading ${asset.name} from release ${release.tag}...`);
-    const assetRes = await fetch(asset.browser_download_url);
+    // The signal covers the body read below too, so a mid-stream stall aborts before
+    // anything is written — the existing .download temp-then-rename keeps the cache intact.
+    const assetRes = await fetch(asset.browser_download_url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
     if (!assetRes.ok) {
       log(`auto-download failed (HTTP ${assetRes.status}), using existing local cache if present`);
       return;

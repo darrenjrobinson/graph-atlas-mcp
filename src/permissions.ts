@@ -96,7 +96,9 @@ export function getPermissionsForObject(
   const conditions = ['lower(resources) LIKE ?'];
   const params: unknown[] = [`%"${objectLower}"%`];
   if (opts.permissionName) {
-    conditions.push('permission_name = ?');
+    // NOCASE to match the case-insensitive resources filter above — permissionName is
+    // caller-supplied, so an exact-case comparison here silently returned nothing.
+    conditions.push('permission_name = ? COLLATE NOCASE');
     params.push(opts.permissionName);
   }
 
@@ -138,7 +140,10 @@ export interface RelatedPermission {
  * order as a recommendation.
  */
 export function getRelatedPermissions(db: DatabaseSync, permissionName: string): { target: PermissionContext; related: RelatedPermission[] } | null {
-  const targetRow = db.prepare('SELECT * FROM permissions WHERE permission_name = ?').get(permissionName) as PermissionRow | undefined;
+  // NOCASE: permissionName comes straight from the get_permission_context tool argument.
+  const targetRow = db.prepare('SELECT * FROM permissions WHERE permission_name = ? COLLATE NOCASE').get(permissionName) as
+    | PermissionRow
+    | undefined;
   if (!targetRow) return null;
   const target = toPermissionContext(db, targetRow, JSON.parse(targetRow.graph_endpoints || '[]'));
   const targetResources = new Set<string>(JSON.parse(targetRow.resources ?? '[]'));

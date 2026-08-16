@@ -391,9 +391,16 @@ export function entityRolesDelta(db: DatabaseSync, opts: { nodeId: string; since
   return { nodes, edges, message };
 }
 
-/** One permission's reach: the entity types it touches and the roles that grant it. */
+/**
+ * One permission's reach: the entity types it touches and the roles that grant it.
+ *
+ * NOCASE for the same reason as roleDelta — nodeId is caller-supplied, and permission names
+ * are mixed case ("User.Read.All"), so "user.read.all" would otherwise come back missing.
+ */
 export function permissionDelta(db: DatabaseSync, opts: { nodeId: string; since?: string }): Delta | { error: string } {
-  const row = db.prepare(`SELECT ${PERMISSION_COLUMNS} FROM permissions WHERE permission_name = ?`).get(opts.nodeId) as PermissionRow | undefined;
+  const row = db.prepare(`SELECT ${PERMISSION_COLUMNS} FROM permissions WHERE permission_name = ? COLLATE NOCASE`).get(opts.nodeId) as
+    | PermissionRow
+    | undefined;
   if (!row) return { error: `Permission "${opts.nodeId}" not found.` };
 
   const since = normalizeSince(opts.since);
@@ -433,9 +440,19 @@ export function permissionDelta(db: DatabaseSync, opts: { nodeId: string; since?
   return { nodes, edges, message };
 }
 
-/** One role's reach: the permissions it grants and the entity types those touch. */
+/**
+ * One role's reach: the permissions it grants and the entity types those touch.
+ *
+ * NOCASE because nodeId arrives from a tool argument — an LLM or a person typing a display
+ * name — while role_name holds Title Case ("User Administrator"). Entity ids are
+ * canonicalized (canonicalEntityId lowercases them); roles and permissions are the kinds
+ * matched verbatim, so without this "user administrator" reports the role as missing. It
+ * costs the idx_roles_name index (declared BINARY), which at 135 roles is immaterial, and
+ * no two roles differ only by case, so the match stays unambiguous. The node keeps the
+ * dataset's own casing, so callers that already had it right see no change.
+ */
 export function roleDelta(db: DatabaseSync, opts: { nodeId: string; since?: string }): Delta | { error: string } {
-  const role = db.prepare(`SELECT ${ROLE_COLUMNS} FROM roles WHERE role_name = ?`).get(opts.nodeId) as RoleRow | undefined;
+  const role = db.prepare(`SELECT ${ROLE_COLUMNS} FROM roles WHERE role_name = ? COLLATE NOCASE`).get(opts.nodeId) as RoleRow | undefined;
   if (!role) return { error: `Role "${opts.nodeId}" not found.` };
 
   const since = normalizeSince(opts.since);
@@ -570,7 +587,9 @@ export function buildPermissionGraph(
       view: 'permission',
       endpoint: null,
       snapshot_date: null,
-      focus_object: opts.focusObject,
+      // The focus node (always first) carries the dataset's casing; echo that rather than
+      // the caller's, so focus_object always names a node id present in nodes.
+      focus_object: delta.nodes[0]?.id ?? opts.focusObject,
       nodes: delta.nodes,
       edges: delta.edges,
       total_count: totalCount,
@@ -632,7 +651,8 @@ export function buildRoleGraph(db: DatabaseSync, opts: { focusObject?: string; s
       view: 'role',
       endpoint: null,
       snapshot_date: null,
-      focus_object: opts.focusObject,
+      // As in buildPermissionGraph: the resolved node's casing, not the caller's.
+      focus_object: delta.nodes[0]?.id ?? opts.focusObject,
       nodes: delta.nodes,
       edges: delta.edges,
       total_count: totalCount,

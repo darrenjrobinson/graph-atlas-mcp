@@ -13,7 +13,7 @@ export const description =
   'kind="Role" returns granted permissions and their entities.';
 
 export const inputSchema = {
-  node_id: z.string().describe('Node id — lowercase entity type, permission name, or role name'),
+  node_id: z.string().describe('Node id — a lowercase entity type, or a permission or role name (casing ignored)'),
   kind: z.enum(['EntityType', 'Permission', 'Role']),
   view: z.enum(['entity', 'permission', 'role']).default('entity').describe('Steers EntityType expansion: schema neighborhood vs permission usage'),
   endpoint: z.enum(['v1.0', 'beta']).default('v1.0').describe('Only applies to EntityType schema neighborhoods'),

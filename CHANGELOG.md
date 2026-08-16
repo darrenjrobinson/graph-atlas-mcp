@@ -27,6 +27,22 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ### Fixed
 
+- Role and permission lookups rejecting a name whose casing didn't match the database
+  exactly. Role names are stored as Title Case display strings (`User Administrator`) and
+  permission names mixed case (`User.Read.All`), but these names arrive from tool arguments
+  — an LLM or a person typing a display name — and were compared with SQLite's
+  case-sensitive `=`. So `user administrator` reported the role as not found. Entity ids
+  were never affected (they are canonicalized to lowercase); roles and permissions were the
+  kinds matched verbatim. The caller-facing lookups behind `expand_schema_node`,
+  `visualize_schema_graph`, `schema_change_report` and `get_permission_context` now compare
+  `COLLATE NOCASE`, and `focus_object` echoes the dataset's casing rather than the caller's
+  so it always names a node present in the response. Lookups fed from the database itself
+  are unchanged.
+- Startup hanging when the database auto-download stalled. Neither the release lookup nor
+  the asset download was bounded, and `openDatabase()` awaits both, so a dropped connection
+  or a stalled CDN held server start well past any useful budget — while a perfectly usable
+  cached database sat on disk. Discovery now gets an 8s whole-search budget and the download
+  120s; both fail into the existing handler that keeps the local cache.
 - `get_server_info` never returning `changelog_for_this_version` from an npm install.
   `CHANGELOG.md` was missing from the package `files` list, and npm does not include it
   automatically the way it does README and LICENSE, so `changelogSection()` hit its
