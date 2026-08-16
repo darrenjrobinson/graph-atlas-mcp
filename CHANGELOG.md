@@ -27,6 +27,11 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ### Fixed
 
+- `get_server_info` never returning `changelog_for_this_version` from an npm install.
+  `CHANGELOG.md` was missing from the package `files` list, and npm does not include it
+  automatically the way it does README and LICENSE, so `changelogSection()` hit its
+  read-failure path and returned `null` on every installed copy — the field only ever
+  populated in a source checkout. The file now ships with the package.
 - `CLAUDE.md` describing database path resolution backwards. It claimed a working-directory
   `graph-atlas.db` takes precedence over the `~/.graph-atlas-mcp` cache; `resolveDbPath()`
   checks the cache first, and README.md already documented it correctly. The section now
