@@ -11,8 +11,25 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+### Added
+
+- Attribution in the app's status bar: "Darren Robinson" (linking to darrenjrobinson.com)
+  followed by the server version, bottom-right. The version comes from the
+  `__ATLAS_VERSION__` value already injected at bundle time from `package.json`, so it
+  tracks the package with no extra plumbing.
+- A "Known gaps" table in `CLAUDE.md` recording nine open hazards on the release path found
+  while auditing the two-release-channel rules — an assetless-release window in
+  `create-release.js`, the empty-`$TAG` hole in `collect.yml`, the missing JS-side guard
+  against collecting into an empty database, and missing startup timeouts among them. These
+  are documented, not fixed.
+
 ### Fixed
 
+- `CLAUDE.md` describing database path resolution backwards. It claimed a working-directory
+  `graph-atlas.db` takes precedence over the `~/.graph-atlas-mcp` cache; `resolveDbPath()`
+  checks the cache first, and README.md already documented it correctly. The section now
+  lists the real order and spells out that `GRAPH_ATLAS_DB` is the only reliable way to pin
+  local development to a checkout's database.
 - Publish workflow leaving a release half-done when a precondition failed. The tag check
   (`--verify-tag`) and changelog extraction both ran *after* `npm publish`, so publishing
   v0.3.1 without a pushed tag put the package on npm and then aborted, with no GitHub

@@ -446,6 +446,22 @@ button.ghost:hover { background: #4f8ef71a; }
 .stat-msg { margin-left: auto; }
 .stat-msg.error { color: var(--danger); }
 
+/* Sits last so #stat-msg's margin-left:auto pushes the pair to the right edge — a second
+   auto margin here would split the free space between them instead. nowrap keeps the
+   credit intact when #statusbar wraps on a narrow frame. */
+.stat-credit {
+  display: inline-flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+.stat-credit a {
+  color: var(--text-dim);
+  text-decoration: none;
+}
+.stat-credit a:hover { color: var(--accent-hover); text-decoration: underline; }
+.stat-credit a:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+#stat-version { opacity: 0.65; }
+
 /* ---------- Scrollbars ---------- */
 
 ::-webkit-scrollbar { width: 10px; }

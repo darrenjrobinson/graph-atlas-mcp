@@ -356,6 +356,8 @@ function applyHostTheme(ctx: { theme?: string } | undefined) {
 // Injected at bundle time from package.json by scripts/build-app-ui.js.
 declare const __ATLAS_VERSION__: string;
 
+$('stat-version').textContent = `v${__ATLAS_VERSION__}`;
+
 // autoResize (default on) measures the document's natural height — useless for a
 // full-height flex app; claimSpace() owns sizing instead.
 const app = new App({ name: 'graph-atlas-app', version: __ATLAS_VERSION__ }, undefined, { autoResize: false });
