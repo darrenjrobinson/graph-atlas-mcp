@@ -11,8 +11,48 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-08-16
+
+### Added
+
+- Attribution in the app's status bar: "Darren Robinson" (linking to darrenjrobinson.com)
+  followed by the server version, bottom-right. The version comes from the
+  `__ATLAS_VERSION__` value already injected at bundle time from `package.json`, so it
+  tracks the package with no extra plumbing.
+- A "Known gaps" table in `CLAUDE.md` recording nine open hazards on the release path found
+  while auditing the two-release-channel rules — an assetless-release window in
+  `create-release.js`, the empty-`$TAG` hole in `collect.yml`, the missing JS-side guard
+  against collecting into an empty database, and missing startup timeouts among them. These
+  are documented, not fixed.
+
 ### Fixed
 
+- Role and permission lookups rejecting a name whose casing didn't match the database
+  exactly. Role names are stored as Title Case display strings (`User Administrator`) and
+  permission names mixed case (`User.Read.All`), but these names arrive from tool arguments
+  — an LLM or a person typing a display name — and were compared with SQLite's
+  case-sensitive `=`. So `user administrator` reported the role as not found. Entity ids
+  were never affected (they are canonicalized to lowercase); roles and permissions were the
+  kinds matched verbatim. The caller-facing lookups behind `expand_schema_node`,
+  `visualize_schema_graph`, `schema_change_report` and `get_permission_context` now compare
+  `COLLATE NOCASE`, and `focus_object` echoes the dataset's casing rather than the caller's
+  so it always names a node present in the response. Lookups fed from the database itself
+  are unchanged.
+- Startup hanging when the database auto-download stalled. Neither the release lookup nor
+  the asset download was bounded, and `openDatabase()` awaits both, so a dropped connection
+  or a stalled CDN held server start well past any useful budget — while a perfectly usable
+  cached database sat on disk. Discovery now gets an 8s whole-search budget and the download
+  120s; both fail into the existing handler that keeps the local cache.
+- `get_server_info` never returning `changelog_for_this_version` from an npm install.
+  `CHANGELOG.md` was missing from the package `files` list, and npm does not include it
+  automatically the way it does README and LICENSE, so `changelogSection()` hit its
+  read-failure path and returned `null` on every installed copy — the field only ever
+  populated in a source checkout. The file now ships with the package.
+- `CLAUDE.md` describing database path resolution backwards. It claimed a working-directory
+  `graph-atlas.db` takes precedence over the `~/.graph-atlas-mcp` cache; `resolveDbPath()`
+  checks the cache first, and README.md already documented it correctly. The section now
+  lists the real order and spells out that `GRAPH_ATLAS_DB` is the only reliable way to pin
+  local development to a checkout's database.
 - Publish workflow leaving a release half-done when a precondition failed. The tag check
   (`--verify-tag`) and changelog extraction both ran *after* `npm publish`, so publishing
   v0.3.1 without a pushed tag put the package on npm and then aborted, with no GitHub
