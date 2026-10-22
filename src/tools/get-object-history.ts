@@ -4,11 +4,11 @@ import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
 export const name = 'get_object_history';
 export const description = 'Full change history for a specific Graph object type, oldest to newest — "what has happened to X over time?"';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   object_name: z.string().describe('e.g. group, application, accessPackage, conditionalAccessPolicy'),
   endpoint: z.enum(['v1.0', 'beta']).optional(),
   since: z.string().optional().describe('ISO date (YYYY-MM-DD)'),
-};
+});
 
 export function handler(db: DatabaseSync, args: { object_name: string; endpoint?: 'v1.0' | 'beta'; since?: string }) {
   // object_name casing differs across sources — seed data keeps CSDL casing (accessPackageSuggestion),

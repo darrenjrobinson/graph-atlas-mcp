@@ -7,9 +7,9 @@ export const description =
   'Full detail for a single change record, including related changes from the same snapshot/object, and permission ' +
   'context (required permissions, admin consent, grantable-by roles — see get_permission_context for the heuristic caveat).';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   change_id: z.number().int().describe('Change record ID'),
-};
+});
 
 export function handler(db: DatabaseSync, args: { change_id: number }) {
   const change = db.prepare('SELECT * FROM changes WHERE id = ?').get(args.change_id);

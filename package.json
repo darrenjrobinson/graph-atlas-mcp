@@ -50,8 +50,9 @@
   "license": "MIT",
   "author": "Darren J Robinson",
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "^1.7.5",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@modelcontextprotocol/ext-apps": "^2.0.3",
+    "@modelcontextprotocol/server": "^2.3.1",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.6.7"
   },

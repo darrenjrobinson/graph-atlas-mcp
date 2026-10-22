@@ -8,12 +8,12 @@ export const description =
   '(seed-entra-ms, backfill-graph-changelog, self). Hybrid BM25-style keyword + semantic search, fused via ' +
   'Reciprocal Rank Fusion; degrades to keyword-only without OPENAI_API_KEY configured.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   query: z.string().describe('Natural-language or keyword query, e.g. "groups API nesting", "ID Governance separation of duties"'),
   limit: z.number().int().min(1).max(50).default(10).describe('Max results (default 10, max 50)'),
   endpoint: z.enum(['v1.0', 'beta']).optional().describe('Filter to a specific Graph endpoint'),
   mode: z.enum(['hybrid', 'semantic', 'keyword']).default('hybrid').describe('Search mode — hybrid degrades to keyword automatically without an OpenAI key'),
-};
+});
 
 export async function handler(
   db: DatabaseSync,

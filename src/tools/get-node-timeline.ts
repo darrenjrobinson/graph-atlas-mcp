@@ -8,12 +8,12 @@ export const description =
   'Compact newest-first change timeline for one schema object, sized for the visualizer detail panel. ' +
   'App-facing companion to get_object_history.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   node_id: z.string().describe('Entity type name (case-insensitive)'),
   endpoint: z.enum(['v1.0', 'beta']).optional(),
   since: z.string().optional().describe('ISO date or day count (e.g. "90")'),
   limit: z.number().int().min(1).max(50).default(20),
-};
+});
 
 export function handler(db: DatabaseSync, args: { node_id: string; endpoint?: 'v1.0' | 'beta'; since?: string; limit?: number }) {
   // object_name casing differs across sources (CSDL camelCase vs lowercase URL slugs) — match

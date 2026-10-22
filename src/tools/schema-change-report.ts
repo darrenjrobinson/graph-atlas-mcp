@@ -12,13 +12,13 @@ export const description =
   'overview of the most consequential entities/permissions/roles. Same data as visualize_schema_graph, without ' +
   'rendering it.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   view: z.enum(['entity', 'permission', 'role']).default('entity'),
   object_name: z.string().optional().describe('Focus node — an entity type, permission name, or role name depending on view'),
   endpoint: z.enum(['v1.0', 'beta']).default('v1.0').describe('Only applies to view=entity'),
   since: z.string().optional().describe('ISO date for the change-activity window; defaults to 30 days ago'),
   limit: z.number().int().min(5).max(100).optional(),
-};
+});
 
 export function handler(
   db: DatabaseSync,

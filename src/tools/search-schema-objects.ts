@@ -9,12 +9,12 @@ export const description =
   'canonical node ids for visualize_schema_graph / expand_schema_node. Returns ranked candidates ' +
   '{id, kind, label, sub}; prefix matches rank first.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   query: z.string().min(2),
   kinds: z.array(z.enum(['EntityType', 'Permission', 'Role'])).optional().describe('Restrict to these kinds; default all'),
   endpoint: z.enum(['v1.0', 'beta']).default('v1.0').describe('Snapshot used for entity type names'),
   limit: z.number().int().min(1).max(25).default(12),
-};
+});
 
 export function handler(
   db: DatabaseSync,
