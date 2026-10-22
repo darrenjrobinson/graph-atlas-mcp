@@ -31,6 +31,14 @@ directory, not from the database, so a run that starts from an empty database st
 changes and publishes them — releasing a database stripped of all history, permissions,
 roles and embeddings over a good one. Fail loudly rather than starting fresh.
 
+This is not hypothetical: every data release from `v2026.08.11` to `v2026.10.22` shipped
+that way, and nothing noticed for ten weeks because the daily workflow never collects
+permissions or roles — it only carries them forward through each restore, so once lost they
+stay lost. `v2026.10.22`'s asset was replaced with a repaired database on 2026-10-22.
+`scripts/check-db.js` now guards both ends: `collect.yml` runs it on the restored database,
+and `create-release.js` refuses to publish when permissions, roles, the role map or pre-today
+change history are missing.
+
 ### Known gaps
 
 Both rules above are enforced on the paths that caused the original incident, but an audit
@@ -39,10 +47,9 @@ scratch; treat them as live hazards when touching the release path.
 
 | Gap | Where |
 | --- | --- |
-| `gh` succeeding with no calendar tag among the newest 100 releases is treated as "first run ever", and the job proceeds to build an empty database — the exact incident shape the rule above warns about | `.github/workflows/collect.yml` (`if [ -z "$TAG" ] … exit 0`) |
+| `gh` succeeding with no calendar tag among the newest 100 releases is treated as "first run ever", and the job proceeds to build an empty database. `create-release.js` now refuses to publish it, but the snapshot commit runs first, so that day's changes are stranded (see the step-order row) | `.github/workflows/collect.yml` (`if [ -z "$TAG" ] … exit 0`) |
 | The release is created *before* its asset is uploaded, so a failed upload leaves a calendar-tagged release carrying no `graph-atlas.db.gz` — clients find no asset and give up, and the next day's restore hard-fails on the same tag | `scripts/create-release.js` (`main`) |
-| No second-line guard in JS: `openDb()` calls `new DatabaseSync(path)`, which *creates* the file, so a missing restore silently yields an empty database that still diffs against `snapshots/` and gets published. The shell in `collect.yml` is the only protection | `scripts/schema.js`, `scripts/collect-and-diff.js` |
-| No sanity assertion on the restored database before collection runs | `.github/workflows/collect.yml` (after `gunzip`) |
+| Permissions, roles and the role map are never refreshed by CI, so they age from whenever someone last ran the collectors locally (the 2026-10-22 repair, at the time of writing) | `.github/workflows/collect.yml`, `scripts/collect-permissions.js`, `scripts/collect-roles.js` |
 | No fallback to the next-older data release when the newest one carries no database asset | `src/db.ts` (`tryAutoDownload`) |
 | `today` is computed independently in the collector and the release script. A UTC-midnight crossing between them desynchronises the tag date from `snapshot_date`. `buildReleaseNotes()` still emits its fallback change-count sentence, but every date-filtered part — the per-endpoint change lists and the snapshot sizes — comes back empty. Worse, the tag date is then permanently ahead of the database's newest `snapshot_date`, so the client currency check never reads as up to date and re-downloads on every startup | `scripts/collect-and-diff.js`, `scripts/create-release.js` |
 | The snapshot is committed *before* the release is created, so a failed release strands that day's changes: tomorrow's baseline has advanced past them, but no published database ever carried them | `.github/workflows/collect.yml` (step order) |

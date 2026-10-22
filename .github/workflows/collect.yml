@@ -47,6 +47,9 @@ jobs:
           # restored, and continuing would publish a gutted database over it.
           gh release download "$TAG" --pattern 'graph-atlas.db.gz' --output graph-atlas.db.gz --clobber
           gunzip -f graph-atlas.db.gz
+          # A restore that "succeeds" with a gutted database is as bad as a failed one: the
+          # collection below would build on it and release it. Stop here instead.
+          node --experimental-sqlite scripts/check-db.js graph-atlas.db
 
       - name: Collect and diff
         run: node --experimental-sqlite scripts/collect-and-diff.js
