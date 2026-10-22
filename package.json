@@ -1,6 +1,6 @@
 {
   "name": "graph-atlas-mcp",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "mcpName": "io.github.darrenjrobinson/graph-atlas-mcp",
   "description": "MCP server tracking undocumented and documented Microsoft Graph API schema changes across Entra ID, Entra ID Governance, Identity & Access Management, Entra Agent ID, and Information Protection — with an interactive MCP Apps schema visualiser.",
   "type": "module",
@@ -50,17 +50,18 @@
   "license": "MIT",
   "author": "Darren J Robinson",
   "dependencies": {
-    "@modelcontextprotocol/ext-apps": "^1.7.5",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/client": "^2.3.1",
+    "@modelcontextprotocol/ext-apps": "^2.0.3",
+    "@modelcontextprotocol/server": "^2.3.1",
     "sqlite-vec": "^0.1.9",
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/d3": "^7.4.3",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.6.5",
     "d3": "^7.9.0",
-    "esbuild": "^0.28.1",
-    "fast-xml-parser": "^5.10.1",
+    "esbuild": "^0.28.2",
+    "fast-xml-parser": "^5.11.2",
     "typescript": "^7.0.2"
   }
 }

@@ -4,7 +4,7 @@ import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
 export const name = 'get_recent_changes';
 export const description = 'Structured, filterable query over the change history — filter by date, endpoint, object type/name, change kind, and source.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   since: z.string().optional().describe('ISO date (YYYY-MM-DD); defaults to 7 days ago'),
   endpoint: z.enum(['v1.0', 'beta']).optional(),
   object_type: z.string().optional().describe('e.g. EntityType, EnumType, ComplexType, ObjectInstance'),
@@ -12,7 +12,7 @@ export const inputSchema = {
   change_kind: z.enum(['added', 'removed', 'modified', 'renamed', 'deprecated']).optional(),
   source: z.enum(['seed-entra-ms', 'backfill-graph-changelog', 'self']).optional(),
   limit: z.number().int().min(1).max(200).default(50),
-};
+});
 
 type Args = {
   since?: string;

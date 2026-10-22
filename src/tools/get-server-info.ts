@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
@@ -12,7 +13,7 @@ export const description =
   'semver versions (e.g. v0.1.0). Call for "what version is this?", "what\'s new in the latest Graph Atlas ' +
   'release?", or to check whether the local data is current.';
 
-export const inputSchema = {};
+export const inputSchema = z.object({});
 
 const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 

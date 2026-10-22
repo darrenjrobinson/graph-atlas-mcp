@@ -4,10 +4,10 @@ import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
 export const name = 'get_snapshot_summary';
 export const description = 'Snapshot metadata — entity/property/enum counts, CSDL size, change count. "How big is Graph API now?" and trend analysis.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   date: z.string().optional().describe('ISO date (YYYY-MM-DD); defaults to latest'),
   endpoint: z.enum(['v1.0', 'beta']).optional(),
-};
+});
 
 export function handler(db: DatabaseSync, args: { date?: string; endpoint?: 'v1.0' | 'beta' }) {
   const conditions: string[] = [];

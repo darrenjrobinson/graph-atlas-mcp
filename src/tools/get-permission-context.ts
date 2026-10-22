@@ -13,7 +13,7 @@ export const description =
   'Role<->permission cross-referencing is a heuristic correlation (no official Microsoft crosswalk exists) — treat ' +
   '"grantable_by" as a strong signal to verify, not ground truth.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   object_name: z.string().optional().describe('e.g. administrativeUnit, user, group, accessPackage, synchronizationJob'),
   endpoint: z.enum(['v1.0', 'beta']).optional(),
   permission_name: z.string().optional().describe(
@@ -23,7 +23,7 @@ export const inputSchema = {
   limit: z.number().int().min(1).max(50).default(25).describe(
     'Max permissions to return when using object_name (sorted narrowest-first by resource count); broad objects like "user" can match 100+',
   ),
-};
+});
 
 export function handler(db: DatabaseSync, args: { object_name?: string; endpoint?: 'v1.0' | 'beta'; permission_name?: string; limit?: number }) {
   if (!args.object_name && !args.permission_name) {

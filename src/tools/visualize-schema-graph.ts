@@ -16,12 +16,12 @@ export const description =
   'can continue exploring in the UI (expand_schema_node powers that); use schema_change_report for the ' +
   'same data without rendering.';
 
-export const inputSchema = {
+export const inputSchema = z.object({
   view: z.enum(['entity', 'permission', 'role']).default('entity'),
   focus_object: z.string().optional().describe('Focus node — an entity type, permission name, or role name depending on view'),
   endpoint: z.enum(['v1.0', 'beta']).default('v1.0').describe('Only applies to view=entity'),
   since: z.string().optional().describe('Change-activity window — ISO date or day count (e.g. "30"); defaults to 30 days ago'),
-};
+});
 
 export function handler(
   db: DatabaseSync,
