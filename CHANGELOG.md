@@ -11,6 +11,24 @@ GitHub release notes (scripts/extract-changelog.js).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-22
+
+### Changed
+
+- Moved to the MCP TypeScript SDK v2 (`@modelcontextprotocol/server` and
+  `@modelcontextprotocol/client`, replacing `@modelcontextprotocol/sdk` 1.x) and to
+  `@modelcontextprotocol/ext-apps` 2.x. The wire protocol is unchanged, so existing MCP
+  clients and the visualiser behave as before. Calls to an unknown tool now fail with a
+  JSON-RPC error (-32602) rather than an `isError` result.
+- Tool input schemas are declared as `z.object(...)` rather than raw Zod shapes.
+- Dependency updates: zod 4.6.7 (plus dev-only bumps to `@types/node`, esbuild and
+  fast-xml-parser).
+
+### Security
+
+- Dropping the v1 SDK removes its bundled Express stack: `npm audit --omit=dev` goes from
+  6 findings (1 critical, 2 high, 3 moderate) to none.
+
 ## [0.3.2] - 2026-08-16
 
 ### Added
