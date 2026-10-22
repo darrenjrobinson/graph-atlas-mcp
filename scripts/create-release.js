@@ -8,6 +8,7 @@ import { createReadStream, createWriteStream, existsSync, readFileSync } from 'n
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
+import { releaseBlockers } from './check-db.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DB_PATH = join(ROOT, 'graph-atlas.db');
@@ -92,6 +93,15 @@ async function main() {
 
   const today = new Date().toISOString().slice(0, 10);
   const tag = `v${today.replaceAll('-', '.')}`;
+
+  // Last line of defence: never publish a database without permissions, roles or history.
+  // Clients and tomorrow's restore would both pick it up as the newest data release.
+  const db = new DatabaseSync(DB_PATH, { readOnly: true });
+  const problems = releaseBlockers(db, { today });
+  db.close();
+  if (problems.length) {
+    throw new Error(`Refusing to release ${tag}:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
+  }
 
   console.log(`Compressing ${DB_PATH}...`);
   await pipeline(createReadStream(DB_PATH), createGzip(), createWriteStream(GZ_PATH));
